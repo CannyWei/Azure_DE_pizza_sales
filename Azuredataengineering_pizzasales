@@ -1,0 +1,45 @@
+dbutils.fs.mount(
+    source = "wasbs://raw@deyoutube1.blob.core.windows.net",
+    mount_point = "/mnt/raw2",
+    extra_configs = {"fs.azure.account.key.deyoutube1.blob.core.windows.net":"2hs8aimzJ9oMCVX1O+otjcfC7TmUsu0KPyzYu4biUziqYbD0Z3mV6uwiR+AVWlt8wg84fYN7qxfG+AStBe3Iug=="})
+
+    dbutils.fs.ls("/mnt/raw2")
+
+    df = spark.read.format("csv").options(header="True",inferSchema='True').load('dbfs:/mnt/raw3/dbo.pizza_sales.txt')
+
+    display(df)
+
+    df.createOrReplaceTempView("pizza_sales_analysis")
+
+    %sql
+    SELECT * FROM pizza_sales_analysis
+
+    %sql
+    select
+    order_id,
+    quantity,
+    date_format(order_date, 'MMMM') month_name,
+    date_format(order_date, 'EEEE') day_name,
+    hour(order_time) order_time,
+    unit_price,
+    total_price,
+    pizza_size,
+    pizza_category,
+    pizza_name
+    from pizza_sales_analysis
+  
+#create an aggregate table for KPI analysis
+%sql
+select
+count(distinct order_id) order_id,
+sum(quantity) quantity,
+date_format(order_date, 'MMMM') month_name,
+date_format(order_date, 'EEEE') day_name,
+hour(order_time) order_time,
+sum(unit_price) unit_price,
+sum(total_price) total_sales,
+pizza_size,
+pizza_category,
+pizza_name
+from pizza_sales_analysis
+group by 3,4,5,8,9,10
